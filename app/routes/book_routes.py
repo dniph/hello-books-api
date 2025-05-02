@@ -41,33 +41,32 @@ def get_all_books():
         )
     return books_response
 
+@books_bp.get("/<book_id>")
+def get_one_book(book_id):
+    book = validate_book(book_id)
 
+    return {
+        "id": book.id,
+        "title": book.title,
+        "description": book.description,
+    }
 
-# #Get all the books
-# @books_bp.get("")
-# def get_all_books():
-#     books_response = []
-#     for book in books:
-#         books_response.append(dict(
-#             id = book.id,
-#             title = book.title,
-#             description = book.description
-#         ))
-        
-#     return books_response
+def validate_book(book_id):
+    try:
+        book_id = int(book_id)
+    except:
+        response = {"message": f"book {book_id} invalid"}
+        abort(make_response(response , 400))
 
-# #Get one book
-# @books_bp.get("/<book_id>")
-# def get_one_book(book_id):
-#     try:
-#         book_id = int(book_id)
-#     except ValueError:
-#         return {"message": f"book {book_id} invalid"}, 400
+    query = db.select(Book).where(Book.id == book_id)
+    book = db.session.scalar(query)
     
-#     for book in books:
-#         if book.id == book_id:
-#             return dict(id = book.id,
-#             title = book.title,
-#             description = book.description
-#             )
-#     return {"message": f"book {book_id} not found"}, 404
+    if not book:
+        response = {"message": f"book {book_id} not found"}
+        abort(make_response(response, 404))
+
+    return book
+
+
+
+
