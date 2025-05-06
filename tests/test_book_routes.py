@@ -23,7 +23,7 @@ def test_get_one_book(client, two_saved_books):
         "title": "Ocean Book",
         "description": "watr 4evr"
     }
-    
+
 def test_create_one_book(client):
     # Act
     response = client.post("/books", json={
@@ -39,6 +39,8 @@ def test_create_one_book(client):
         "title": "New Book",
         "description": "The Best!"
     }   
+    
+    
     
 #TEST CASES FOR CREATE A NEW BOOK
 def test_create_one_book_no_title(client):
@@ -85,54 +87,74 @@ def test_create_one_book_with_extra_keys(client):
         "title": "New Book",
         "description": "The Best!"
     }
-#Tests for from_dict
 
-def test_from_dict_returns_book():
-    # Arrange
-    book_data = {
-        "title": "New Book",
-        "description": "The Best!"
-    }
+    
+#Get books and validation 
 
+# When we have records, `get_all_books` returns a list containing a dictionary representing each `Book`
+def test_get_all_books_with_two_records(client, two_saved_books):
     # Act
-    new_book = Book.from_dict(book_data)
+    response = client.get("/books")
+    response_body = response.get_json()
 
     # Assert
-    assert new_book.title == "New Book"
-    assert new_book.description == "The Best!"
-
-def test_from_dict_with_no_title():
-    # Arrange
-    book_data = {
-        "description": "The Best!"
+    assert response.status_code == 200
+    assert len(response_body) == 2
+    assert response_body[0] == {
+        "id": 1,
+        "title": "Ocean Book",
+        "description": "watr 4evr"
+    }
+    assert response_body[1] == {
+        "id": 2,
+        "title": "Mountain Book",
+        "description": "i luv 2 climb rocks"
     }
 
-    # Act & Assert
-    with pytest.raises(KeyError, match = 'title'):
-        new_book = Book.from_dict(book_data)
-
-def test_from_dict_with_no_description():
-    # Arrange
-    book_data = {
-        "title": "New Book"
-    }
-
-    # Act & Assert
-    with pytest.raises(KeyError, match = 'description'):
-        new_book = Book.from_dict(book_data)
-
-def test_from_dict_with_extra_keys():
-    # Arrange
-    book_data = {
-        "extra": "some stuff",
-        "title": "New Book",
-        "description": "The Best!",
-        "another": "last value"
-    }
-
+# When we have records and a `title` query in the request arguments, `get_all_books` returns a list containing only the `Book`s that match the query
+def test_get_all_books_with_title_query_matching_none(client, two_saved_books):
     # Act
-    new_book = Book.from_dict(book_data)
+    data = {'title': 'Desert Book'}
+    response = client.get("/books", query_string = data)
+    response_body = response.get_json()
 
     # Assert
-    assert new_book.title == "New Book"
-    assert new_book.description == "The Best!"
+    assert response.status_code == 200
+    assert response_body == []
+
+# When we have records and a `title` query in the request arguments, `get_all_books` returns a list containing only the `Book`s that match the query
+def test_get_all_books_with_title_query_matching_one(client, two_saved_books):
+    # Act
+    data = {'title': 'Ocean Book'}
+    response = client.get("/books", query_string = data)
+    response_body = response.get_json()
+
+    # Assert
+    assert response.status_code == 200
+    assert len(response_body) == 1
+    assert response_body[0] == {
+        "id": 1,
+        "title": "Ocean Book",
+        "description": "watr 4evr"
+    }
+
+# When we call `get_one_book` with a numeric ID that doesn't have a record, we get the expected error message
+def test_get_one_book_missing_record(client, two_saved_books):
+    # Act
+    response = client.get("/books/3")
+    response_body = response.get_json()
+
+    # Assert
+    assert response.status_code == 404
+    assert response_body == {"message": "book 3 not found"}
+
+# When we call `get_one_book` with a non-numeric ID, we get the expected error message
+def test_get_one_book_invalid_id(client, two_saved_books):
+    # Act
+    response = client.get("/books/cat")
+    response_body = response.get_json()
+
+    # Assert
+    assert response.status_code == 400
+    assert response_body == {"message": "book cat invalid"}
+    
