@@ -158,3 +158,98 @@ def test_get_one_book_invalid_id(client, two_saved_books):
     assert response.status_code == 400
     assert response_body == {"message": "book cat invalid"}
     
+def test_update_book(client, two_saved_books):
+    # Arrange
+    test_data = {
+        "title": "New Book",
+        "description": "The Best!"
+    }
+
+    # Act
+    response = client.put("/books/1", json=test_data)
+
+    #
+    assert response.status_code == 204
+
+    
+    updated_book = Book.query.get(1)
+    assert updated_book is not None  
+    assert updated_book.title == "New Book"  
+    assert updated_book.description == "The Best!"
+
+def test_update_book_with_extra_keys(client, two_saved_books):
+    # Arrange
+    test_data = {
+        "extra": "some stuff",  
+        "title": "New Book",    
+        "description": "The Best!",  
+        "another": "last value"  
+    }
+
+    # Act
+    response = client.put("/books/1", json=test_data)
+
+    # Assert
+    assert response.status_code == 204  
+
+    # Verificar que la base de datos se haya actualizado
+    updated_book = Book.query.get(1)  # Asegúrate de que el libro con ID 1 se haya actualizado
+    assert updated_book.title == "New Book"  # Verifica que el título se haya actualizado
+    assert updated_book.description == "The Best!"
+
+def test_update_book_missing_record(client, two_saved_books):
+    # Arrange
+    test_data = {
+        "title": "New Book",
+        "description": "The Best!"
+    }
+
+    # Act
+    response = client.put("/books/3", json=test_data)
+    response_body = response.get_json()
+
+    # Assert
+    assert response.status_code == 404
+    assert response_body == {"message": "book 3 not found"}
+
+def test_update_book_invalid_id(client, two_saved_books):
+    # Arrange
+    test_data = {
+        "title": "New Book",
+        "description": "The Best!"
+    }
+
+    # Act
+    response = client.put("/books/cat", json=test_data)
+    response_body = response.get_json()
+
+    # Assert
+    assert response.status_code == 400
+    assert response_body == {"message": "book cat invalid"}
+
+def test_delete_book(client, two_saved_books):
+    # Act
+    response = client.delete("/books/1")
+
+    # Assert
+    assert response.status_code == 204
+    assert response.data == b''
+
+def test_delete_book_missing_record(client, two_saved_books):
+    # Act
+    response = client.delete("/books/3")
+    response_body = response.get_json()
+
+    # Assert
+    assert response.status_code == 404
+    assert response_body == {"message": "book 3 not found"}
+
+def test_delete_book_invalid_id(client, two_saved_books):
+    # Act
+    response = client.delete("/books/cat")
+    response_body = response.get_json()
+
+    # Assert
+    assert response.status_code == 400
+    assert response_body == {"message": "book cat invalid"}
+    
